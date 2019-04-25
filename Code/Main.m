@@ -972,7 +972,7 @@ for t =3:targetNum
                         sub_region =  zeros(volume_dims(1),volume_dims(2));
                         sub_region(i: Nnum: end,j: Nnum: end) = volume(i: Nnum: end, j: Nnum: end, d);
                         sub_psf = squeeze(LFpsf( CAindex(d,1):CAindex(d,2), CAindex(d,1):CAindex(d,2) ,i,j,d));
-                        sub_psf = sub_psf/sum(sub_psf(:));
+%                         sub_psf = sub_psf/sum(sub_psf(:));
                         sub_out = conv2(sub_region,sub_psf,'same');
                         stacks(:, :, d) = stacks(:, :, d) + sub_out;
                     end
@@ -1006,7 +1006,7 @@ for t =3:targetNum
                     sub_region =  gpuArray.zeros(volume_dims(1),volume_dims(2),'single');
                     sub_region(i: Nnum: end,j: Nnum: end) = volume(i: Nnum: end, j: Nnum: end, d);
                     sub_psf = gpuArray(single(squeeze(LFpsf( CAindex(d,1):CAindex(d,2), CAindex(d,1):CAindex(d,2) ,i,j,d))));
-                    sub_psf = sub_psf/sum(sub_psf(:));
+%                     sub_psf = sub_psf/sum(sub_psf(:));
 %                     sub_Out = conv2(sub_region,sub_psf,'same');
                     sub_Out = conv2FFT(sub_region, sub_psf);
                     sub_out = gather(sub_Out);
