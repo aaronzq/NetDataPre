@@ -1041,6 +1041,12 @@ save_path_3d = '../Data/TrainingPair/WF';
 series_path_2d = '../Data/LFforward';
 save_path_2d = '../Data/TrainingPair/LF';
 
+if exist('save_path_3d','dir') ~=7
+    mkdir(save_path_3d);
+end
+if exist('savePath','dir') ~=7
+    mkdir(save_path_2d);
+end
 
 if save_all    
     if videoMode
