@@ -22,7 +22,7 @@ function varargout = Main(varargin)
 
 % Edit the above text to modify the response to help Main
 
-% Last Modified by GUIDE v2.5 22-Nov-2018 19:04:38
+% Last Modified by GUIDE v2.5 08-Jul-2020 00:19:59
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -66,16 +66,25 @@ function saveState(handles)
     settingCropStack.Overlap = get(handles.editOverlap,'string');
     settingCropStack.dx = get(handles.editdx,'string');
     settingCropStack.Nnum = get(handles.editNnum, 'string');
-    settingCropStack.RangeAdjust = get(handles.editRangeAdjust,'string');
-    settingCropStack.ZsamplingPara = get(handles.editZsamplingPara,'string');
-    settingCropStack.RotatingStep = get(handles.editRotatingStep,'string');
+    settingCropStack.BrightnessAdjust = get(handles.editBrightnessAdjust,'string');
+    settingCropStack.AxialSampling = get(handles.editAxialSampling,'string');
+    settingCropStack.RotationStep = get(handles.editRotationStep,'string');
     
     settingCropStack.RectifyImage = get(handles.checkboxRectifyImage,'Value');
     settingCropStack.Rotate = get(handles.checkboxRotate,'Value');
-    settingCropStack.VideoMode = get(handles.checkboxVideoMode,'Value');
+    settingCropStack.CompStack = get(handles.checkboxCompStack,'Value');
+    settingCropStack.FlipX = get(handles.checkboxFlipX,'Value');
+    settingCropStack.FlipY = get(handles.checkboxFlipY,'Value');
+    settingCropStack.FlipZ = get(handles.checkboxFlipZ,'Value');
     
-    settingForwardProjection.ConvPara = get(handles.editConvPara,'string');
     
+    settingForwardProjection.BrightnessAdjust2 = get(handles.editBrightnessAdjust2,'string');
+    settingForwardProjection.GaussianSigma = get(handles.editGaussianSigma,'string');
+    
+    settingForwardProjection.GPU = get(handles.checkboxGPU,'Value');
+    settingForwardProjection.PoissonNoise = get(handles.checkboxPoissonNoise,'Value');
+    settingForwardProjection.GaussianNoise = get(handles.checkboxGaussianNoise,'Value');
+        
     settingCrop.SizeX = get(handles.editSizeX,'string');
     settingCrop.SizeY = get(handles.editSizeY,'string');
     settingCrop.SizeZ = get(handles.editSizeZ,'string');
@@ -104,31 +113,50 @@ if exist(fileName1)
     set(handles.editOverlap,'string',settingCropStack.Overlap);
     set(handles.editdx,'string',settingCropStack.dx);
     set(handles.editNnum,'string',settingCropStack.Nnum);
-    set(handles.editRangeAdjust,'string',settingCropStack.RangeAdjust);
-    set(handles.editZsamplingPara,'string',settingCropStack.ZsamplingPara);
-    set(handles.editRotatingStep,'string',settingCropStack.RotatingStep);
+    set(handles.editBrightnessAdjust,'string',settingCropStack.BrightnessAdjust);
+    set(handles.editAxialSampling,'string',settingCropStack.AxialSampling);
+    set(handles.editRotationStep,'string',settingCropStack.RotationStep);
+    
     set(handles.checkboxRectifyImage,'value',settingCropStack.RectifyImage);
     set(handles.checkboxRotate,'value',settingCropStack.Rotate);
-    set(handles.checkboxVideoMode,'value',settingCropStack.VideoMode);
+    set(handles.checkboxCompStack,'value',settingCropStack.CompStack);
+    set(handles.checkboxFlipX,'value',settingCropStack.FlipX);
+    set(handles.checkboxFlipY,'value',settingCropStack.FlipY);
+    set(handles.checkboxFlipZ,'value',settingCropStack.FlipZ);
 else
     set(handles.editStackDepth,'string','31');
     set(handles.editOverlap,'string','0.5');
     set(handles.editdx,'string','23.265');
     set(handles.editNnum,'string','11');
-    set(handles.editRangeAdjust,'string','1.3');
-    set(handles.editZsamplingPara,'string','4');
-    set(handles.editRotatingStep,'string','15')
+    set(handles.editBrightnessAdjust,'string','0.77');
+    set(handles.editAxialSampling,'string','1');
+    set(handles.editRotationStep,'string','30')
+    
     set(handles.checkboxRectifyImage,'value',1);
     set(handles.checkboxRotate,'value',1);
-    set(handles.checkboxVideoMode,'value',0);
+    set(handles.checkboxCompStack,'value',1);
+    set(handles.checkboxFlipX,'value',0);
+    set(handles.checkboxFlipY,'value',0);
+    set(handles.checkboxFlipZ,'value',1);
 end
 
 fileName2 = '../RUN/recentsettingForwardProjection.mat';
 if exist(fileName2)
     load(fileName2);
-    set(handles.editConvPara,'string',settingForwardProjection.ConvPara);
+    set(handles.editBrightnessAdjust2,'string',settingForwardProjection.ConvPara);
+    set(handles.editGaussianSigma,'string',settingForwardProjection.GaussianSigma);
+    
+    set(handles.checkboxGPU,'value',settingForwardProjection.GPU);
+    set(handles.checkboxPoissonNoise,'value',settingForwardProjection.PoissonNoise);
+    set(handles.checkboxGaussianNoise,'value',settingForwardProjection.GaussianNoise);
+    
 else
-    set(handles.editConvPara,'string','6');
+    set(handles.editBrightnessAdjust2,'string',0.005);
+    set(handles.editGaussianSigma,'string',0.000005);
+    
+    set(handles.checkboxGPU,'value',1);
+    set(handles.checkboxPoissonNoise,'value',0);
+    set(handles.checkboxGaussianNoise,'value',0);
 end
 
 fileName3 = '../RUN/recentsettingCrop.mat';
@@ -142,7 +170,7 @@ if exist(fileName3)
 else
     set(handles.editSizeX,'string','176');
     set(handles.editSizeY,'string','176');
-    set(handles.editSizeZ,'string','16');
+    set(handles.editSizeZ,'string','31');
     set(handles.editSumThreshold,'string','1e5');
     set(handles.editVarThreshold,'string','1e0');
 end
@@ -161,21 +189,31 @@ function readState(handles)
     settingCropStack.Overlap = get(handles.editOverlap,'string');
     settingCropStack.dx = get(handles.editdx,'string');
     settingCropStack.Nnum = get(handles.editNnum, 'string');
-    settingCropStack.RangeAdjust = get(handles.editRangeAdjust,'string');
-    settingCropStack.ZsamplingPara = get(handles.editZsamplingPara,'string');
-    settingCropStack.RotatingStep = get(handles.editRotatingStep,'string');
-
+    settingCropStack.BrightnessAdjust = get(handles.editBrightnessAdjust,'string');
+    settingCropStack.AxialSampling = get(handles.editAxialSampling,'string');
+    settingCropStack.RotationStep = get(handles.editRotationStep,'string');
+    
     settingCropStack.RectifyImage = get(handles.checkboxRectifyImage,'Value');
     settingCropStack.Rotate = get(handles.checkboxRotate,'Value');
-    settingCropStack.VideoMode = get(handles.checkboxVideoMode,'Value');
+    settingCropStack.CompStack = get(handles.checkboxCompStack,'Value');
+    settingCropStack.FlipX = get(handles.checkboxFlipX,'Value');
+    settingCropStack.FlipY = get(handles.checkboxFlipY,'Value');
+    settingCropStack.FlipZ = get(handles.checkboxFlipZ,'Value');
     
-    settingForwardProjection.ConvPara = get(handles.editConvPara,'string');
     
+    settingForwardProjection.BrightnessAdjust2 = get(handles.editBrightnessAdjust2,'string');
+    settingForwardProjection.GaussianSigma = get(handles.editGaussianSigma,'string');
+    
+    settingForwardProjection.GPU = get(handles.checkboxGPU,'Value');
+    settingForwardProjection.PoissonNoise = get(handles.checkboxPoissonNoise,'Value');
+    settingForwardProjection.GaussianNoise = get(handles.checkboxGaussianNoise,'Value');
+        
     settingCrop.SizeX = get(handles.editSizeX,'string');
     settingCrop.SizeY = get(handles.editSizeY,'string');
     settingCrop.SizeZ = get(handles.editSizeZ,'string');
     settingCrop.SumThreshold = get(handles.editSumThreshold,'string');
     settingCrop.VarThreshold = get(handles.editVarThreshold,'string');
+
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -189,32 +227,32 @@ function CropStackcheckState(handles)
     readState(handles);
     settingCropStack.check = 1;
     
-    if ~(str2num(settingCropStack.StackDepth) > 0)
-        disp('The StackDepth should be larger than 0');
+    if ~(  str2num(settingCropStack.StackDepth) > 0 && mod(str2num(settingCropStack.StackDepth),1)==0  )
+        disp('The Stack Depth should be a positive integer.');
         settingCropStack.check = 0;
     end
     if (str2num(settingCropStack.Overlap)<0) || (str2num(settingCropStack.Overlap)>1)
-        disp('Overlap is between 0 and 1');
+        disp('Overlap is a fraction between 0 and 1');
         settingCropStack.check = 0;
     end
     if ~(str2num(settingCropStack.dx)>0)
-        disp('dx equals to 150/PixelSize');
+        disp('dx(equals to 150/PixelSize) should be positve.');
         settingCropStack.check = 0;
     end
     if mod(str2num(settingCropStack.Nnum),2)==0 || mod(str2num(settingCropStack.Nnum),1)>0 || str2num(settingCropStack.Nnum)<1
-        disp('Nnum should be an odd integer number');
+        disp('Nnum should be an odd integer number.');
         settingCropStack.check = 0;
     end
-    if ~(str2num(settingCropStack.RangeAdjust)>=1)
-        disp('RangeAdjust should be larger than 1');
+    if (str2num(settingCropStack.BrightnessAdjust)<=0) || (str2num(settingCropStack.BrightnessAdjust)>1)
+        disp('Brightness Adjust is a fraction between 0 and 1. Higher, brighter.');
         settingCropStack.check = 0;
     end
-    if mod(str2num(settingCropStack.ZsamplingPara),1)>0 || str2num(settingCropStack.ZsamplingPara)<1
-        disp('ZsamplingPara should be an integer number');
+    if mod(str2num(settingCropStack.AxialSampling),1)>0 || str2num(settingCropStack.AxialSampling)<1
+        disp('Axial Sampling should be an integer number for axial downsampling.');
         settingCropStack.check = 0;
     end
-    if mod(str2num(settingCropStack.RotatingStep),1)>0 || str2num(settingCropStack.RotatingStep)<0 || str2num(settingCropStack.RotatingStep) > 180
-        disp('RotatingStep should be an integer number between 0-180 degree');
+    if mod(str2num(settingCropStack.RotationStep),1)>0 || str2num(settingCropStack.RotationStep)<0 || str2num(settingCropStack.RotationStep) > 180
+        disp('Rotation Step should be an integer number between 0-180 degree');
         settingCropStack.check = 0;
     end
     
@@ -231,13 +269,17 @@ function CropStackcheckState(handles)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function ForwardProjectioncheckState(handles)
-    global settingForwardProjection
+    global settingForwardProjection;
     readState(handles);
     settingForwardProjection.check = 1;
     
-    if ~(str2num(settingForwardProjection.ConvPara) > 1)
-        disp('The ConvPara should be larger than 1');
+    if (str2num(settingForwardProjection.BrightnessAdjust2)<=0) || (str2num(settingForwardProjection.BrightnessAdjust2)>1)
+        disp('Brightness Adjust is a fraction between 0 and 1. Higher, brighter.');
         settingForwardProjection.check = 0;
+    end
+    if str2num(settingForwardProjection.GaussianSigma < 0)
+        disp('Gaussian Sigma should be positive.');
+        settingForwardProjection.check = 0;        
     end
 
     
@@ -479,20 +521,18 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-
-
-function editRangeAdjust_Callback(hObject, eventdata, handles)
-% hObject    handle to editRangeAdjust (see GCBO)
+function editBrightnessAdjust_Callback(hObject, eventdata, handles)
+% hObject    handle to editBrightnessAdjust (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of editRangeAdjust as text
-%        str2double(get(hObject,'String')) returns contents of editRangeAdjust as a double
+% Hints: get(hObject,'String') returns contents of editBrightnessAdjust as text
+%        str2double(get(hObject,'String')) returns contents of editBrightnessAdjust as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function editRangeAdjust_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to editRangeAdjust (see GCBO)
+function editBrightnessAdjust_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editBrightnessAdjust (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -503,18 +543,18 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-function editZsamplingPara_Callback(hObject, eventdata, handles)
-% hObject    handle to editZsamplingPara (see GCBO)
+function editAxialSampling_Callback(hObject, eventdata, handles)
+% hObject    handle to editAxialSampling (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of editZsamplingPara as text
-%        str2double(get(hObject,'String')) returns contents of editZsamplingPara as a double
+% Hints: get(hObject,'String') returns contents of editAxialSampling as text
+%        str2double(get(hObject,'String')) returns contents of editAxialSampling as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function editZsamplingPara_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to editZsamplingPara (see GCBO)
+function editAxialSampling_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editAxialSampling (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -524,18 +564,18 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-function editRotatingStep_Callback(hObject, eventdata, handles)
-% hObject    handle to editRotatingStep (see GCBO)
+function editRotationStep_Callback(hObject, eventdata, handles)
+% hObject    handle to editRotationStep (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of editRotatingStep as text
-%        str2double(get(hObject,'String')) returns contents of editRotatingStep as a double
+% Hints: get(hObject,'String') returns contents of editRotationStep as text
+%        str2double(get(hObject,'String')) returns contents of editRotationStep as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function editRotatingStep_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to editRotatingStep (see GCBO)
+function editRotationStep_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editRotationStep (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -674,18 +714,18 @@ end
 
 
 
-function editConvPara_Callback(hObject, eventdata, handles)
-% hObject    handle to editConvPara (see GCBO)
+function editBrightnessAdjust2_Callback(hObject, eventdata, handles)
+% hObject    handle to editBrightnessAdjust2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of editConvPara as text
-%        str2double(get(hObject,'String')) returns contents of editConvPara as a double
+% Hints: get(hObject,'String') returns contents of editBrightnessAdjust2 as text
+%        str2double(get(hObject,'String')) returns contents of editBrightnessAdjust2 as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function editConvPara_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to editConvPara (see GCBO)
+function editBrightnessAdjust2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editBrightnessAdjust2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -718,19 +758,77 @@ else
     settingCropStack.Rotate = 0;
 end
 
-% --- Executes on button press in checkboxVideoMode1.
-function checkboxVideoMode_Callback(hObject, eventdata, handles)
-% hObject    handle to checkboxVideoMode1 (see GCBO)
+% --- Executes on button press in checkboxCompStack.
+function checkboxCompStack_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxCompStack (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of checkboxVideoMode1
+% Hint: get(hObject,'Value') returns toggle state of checkboxCompStack
 global settingCropStack;
 if (get(hObject,'Value') == get(hObject,'Max'))
-    settingCropStack.VideoMode = 1;
+    settingCropStack.CompStack = 1;
 else
-    settingCropStack.VideoMode = 0;
+    settingCropStack.CompStack = 0;
 end
+
+% --- Executes on button press in checkboxFlipX.
+function checkboxFlipX_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxFlipX (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkboxFlipX
+global settingCropStack;
+if (get(hObject,'Value') == get(hObject,'Max'))
+    settingCropStack.FlipX = 1;
+else
+    settingCropStack.FlipX = 0;
+end
+
+% --- Executes on button press in checkboxFlipY.
+function checkboxFlipY_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxFlipY (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkboxFlipY
+global settingCropStack;
+if (get(hObject,'Value') == get(hObject,'Max'))
+    settingCropStack.FlipY = 1;
+else
+    settingCropStack.FlipY = 0;
+end
+
+% --- Executes on button press in checkboxFlipZ.
+function checkboxFlipZ_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxFlipZ (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkboxFlipZ
+global settingCropStack;
+if (get(hObject,'Value') == get(hObject,'Max'))
+    settingCropStack.FlipZ = 1;
+else
+    settingCropStack.FlipZ = 0;
+end
+
+% --- Executes during object creation, after setting all properties.
+function checkboxCompStack_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to checkboxCompStack (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 function CropStacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -741,183 +839,30 @@ warning('off');
 
 load('../RUN/recentsettingCropStack.mat');
 %%%%%%%%%%%%%%%%%%%%%%%%% Substacks Parameters%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-SubStackDepth = str2num(settingCropStack.StackDepth);
-Overlap = str2num(settingCropStack.Overlap);
+substack_depth = str2num(settingCropStack.StackDepth);
+overlap = str2num(settingCropStack.Overlap);
 dx = str2num(settingCropStack.dx); 
 Nnum = str2num(settingCropStack.Nnum);
-RangeAdjust = str2num(settingCropStack.RangeAdjust);
-ZsamplingPara = str2num(settingCropStack.ZsamplingPara);
-RotatingStep = str2num(settingCropStack.RotatingStep);
-RectVolumeEnable = settingCropStack.RectifyImage;
-RotateEnable = settingCropStack.Rotate;
-VideoMode = settingCropStack.VideoMode;
+range_adjust = str2num(settingCropStack.BrightnessAdjust);
+z_sampling = str2num(settingCropStack.AxialSampling);
+rotation_step = str2num(settingCropStack.RotationStep);
+
+rectification_enable = settingCropStack.RectifyImage;
+rotation_enable = settingCropStack.Rotate;
+complement_stack = settingCropStack.CompStack;
+flip_x = settingCropStack.FlipX;
+flip_y = settingCropStack.FlipY;
+flip_z = settingCropStack.FlipZ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-savePath = '../Data/Substacks';
+save_path = '../Data/Substacks';
 if exist('savePath','dir') ~=7
-    mkdir(savePath);
+    mkdir(save_path);
 end
 
-Overlapslice = floor(Overlap * SubStackDepth);
+crop_raw_stack(substack_depth, overlap, dx, Nnum, range_adjust, z_sampling, ...
+    rotation_step, rectification_enable, rotation_enable, save_path);
 
-if VideoMode  %% if processing video (different folder structure)
-    filepath = uigetdir();
-    filedir = dir(filepath);
-    Foldernum = size(filedir,1);
-    disp(['Choose VideoMode...in directory  ' filepath  '......' num2str(Foldernum-2) ' Folders']);
-    disp(['RotateEnable: ' num2str(RotateEnable)]);
-    disp(['RectVolumeEnable: ' num2str(RectVolumeEnable)]);
-    disp('================================================================');
-    for n = 3:Foldernum  % 3 because the 
-        Folder = fullfile(filepath,filedir(n).name);
-        Folderdir = dir(Folder);
-        framenum = size(Folderdir,1);
-        disp(['Processing Folder...  ' num2str(n-2) ]);
-        for nn = 3:framenum
-            tic;
-            if nn == 3              
-                frameName = fullfile(Folder,Folderdir(nn).name);
-                frameInfo = imfinfo(frameName);
-                depth = numel(frameInfo);
-                [OriginalFrame,row,col] = readVolume(frameName,depth,1);               
-                %% Z sampling 
-                Zindex = 1:ZsamplingPara:depth;
-                ZsampledVol = OriginalFrame(:,:,Zindex);
-                %% update depth
-                depth = size(ZsampledVol,3);
-                
-                subStackNum = ceil((depth-SubStackDepth)/(SubStackDepth-Overlapslice)) + 1;
-                subRotateNum = (180*RotateEnable)/RotatingStep + 1;
-                subTargetNum = subStackNum*subRotateNum;
-                
-                %% Rotate and CropZ
-                for angle = 0:RotatingStep:(179*RotateEnable)
-                    frameRot = imrotate(ZsampledVol,angle,'bicubic','loose');
-                    for subStackn = 1:subStackNum
-                        s = 1 + (subStackn-1)*(SubStackDepth-Overlapslice);
-                        e = s + SubStackDepth - 1;
-                        if e > depth   % Wrap the last SubStack
-                            s = s - (e - depth);
-                            e = depth;
-                        end            
-                        subStack = frameRot(:,:,s:e);
-                        if RectVolumeEnable
-                            xCenter = col/2;   
-                            yCenter = row/2;
-                            rectStack = VolumeRectify(subStack,xCenter,yCenter,dx,Nnum,depth);
-                        else
-                            rectStack = subStack;
-                        end
-                        rectStack = (rectStack ./ (RangeAdjust * max(rectStack(:)))) .* 255.0;
-                        % Create Save Folders                
-                        subVideoFolderName = sprintf('%02d_%03d_%02d',(n-2),angle,subStackn);
-                        subVideoFolderDir = [savePath '/' subVideoFolderName];                                                
-                        if exist('subVideoFolderDir','dir') ~= 7
-                            mkdir(subVideoFolderDir);
-                        end
-                        % Save intial stacks
-                        subStackName = sprintf('%02d_%03d_%02d_%04d.tif',(n-2),angle,subStackn,(nn-2));
-                        SaveStack([subVideoFolderDir '/' subStackName],rectStack);
-                    end
-                end
-            else
-                frameName = fullfile(Folder,Folderdir(nn).name);
-                frameInfo = imfinfo(frameName);
-                depth = numel(frameInfo);
-                [OriginalFrame,row,col] = readVolume(frameName,depth,1);               
-                %% Z sampling 
-                Zindex = 1:ZsamplingPara:depth;
-                ZsampledVol = OriginalFrame(:,:,Zindex);
-                %% update depth
-                depth = size(ZsampledVol,3);
-                
-                subStackNum = ceil((depth-SubStackDepth)/(SubStackDepth-Overlapslice)) + 1;
-                subRotateNum = (180*RotateEnable)/RotatingStep + 1;
-                subTargetNum = subStackNum*subRotateNum;
-                
-                %% Rotate and CropZ
-                for angle = 0:RotatingStep:(179*RotateEnable)
-                    frameRot = imrotate(ZsampledVol,angle,'bicubic','loose');
-                    for subStackn = 1:subStackNum
-                        s = 1 + (subStackn-1)*(SubStackDepth-Overlapslice);
-                        e = s + SubStackDepth - 1;
-                        if e > depth   % Wrap the last SubStack
-                            s = s - (e - depth);
-                            e = depth;
-                        end            
-                        subStack = frameRot(:,:,s:e);
-                        if RectVolumeEnable
-                            xCenter = col/2;   
-                            yCenter = row/2;
-                            rectStack = VolumeRectify(subStack,xCenter,yCenter,dx,Nnum,depth);
-                        else
-                            rectStack = subStack;
-                        end
-                        rectStack = (rectStack ./ (RangeAdjust * max(rectStack(:)))) .* 255.0;
-                        % Choose Existing Save Folders                
-                        subVideoFolderName = sprintf('%02d_%03d_%02d',(n-2),angle,subStackn);
-                        subVideoFolderDir = [savePath '/' subVideoFolderName];                                                
-
-                        % Save following stacks
-                        subStackName = sprintf('%02d_%03d_%02d_%04d.tif',(n-2),angle,subStackn,(nn-2));
-                        SaveStack([subVideoFolderDir '/' subStackName],rectStack);
-                    end
-                end
-                
-            end
-            disp(['        Processing Frame...  ' num2str(nn-2) ' in ' num2str(toc) ' sec']);
-        end
-    end
-       
-else
-    [file_name,filepath] = uigetfile('*.tif','Select Original Volumes','MultiSelect','on');
-    if ~iscell(file_name)
-        file_name = {file_name};
-    end
-    fileNum = size(file_name,2);
-
-    for n=1:fileNum
-        saveName = file_name{n};
-        saveName = saveName(1:end-4);
-
-        file = fullfile(filepath,file_name{n});
-        fileInfo = imfinfo(file);
-        depth = numel(fileInfo);
-        [OriginalVol,row,col] = readVolume(file,depth,1);
-
-        Zindex = 1:ZsamplingPara:depth;
-        ZsampledVol = OriginalVol(:,:,Zindex);
-        depth = size(ZsampledVol,3);
-
-        for angle = 0 : RotatingStep : (179*RotateEnable)
-            
-            VolRot = imrotate(ZsampledVol, angle, 'bicubic', 'loose');
-            subStackNum = ceil((depth-SubStackDepth)/(SubStackDepth-Overlapslice)) + 1;   % when Overlap = 0 and depth = SubStackDepth, subStackNum = 1; No Wrap;
-            for nn = 1:subStackNum
-                tic;
-                s = 1 + (nn-1)*(SubStackDepth-Overlapslice);
-                e = s + SubStackDepth - 1;
-                if e > depth   % Wrap the last SubStack
-                    s = s - (e - depth);
-                    e = depth;
-                end
-                subVol = VolRot(:,:,s:e);
-                if RectVolumeEnable
-                    xCenter = col/2;   
-                    yCenter = row/2;
-                    rectVol = VolumeRectify(subVol,xCenter,yCenter,dx,Nnum,depth);
-                else
-                    rectVol = subVol;
-                end        
-                rectVol = (rectVol ./ (RangeAdjust * max(rectVol(:)))) .* 255.0;
-                subVolname = sprintf('%s_Angle%03d_SUB%02d.tif',saveName,angle, nn);
-                SaveStack([savePath '/' subVolname],rectVol);
-                disp([subVolname ' ... ' '  done  ' ' in ' num2str(toc) ' sec']);
-            end
-              
-        end
-    end
-end
-disp('Crop,Rotate and Rectify ... done');
+disp('Rectify and Augment HR data ... done');
 
 
 function forward
@@ -1067,3 +1012,71 @@ else
 end
 
 disp('Crop ...Done');
+
+
+
+
+% --- Executes on button press in checkboxGPU.
+function checkboxGPU_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxGPU (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkboxGPU
+global settingForwardProjection;
+if (get(hObject,'Value') == get(hObject,'Max'))
+    settingForwardProjection.GPU = 1;
+else
+    settingForwardProjection.GPU = 0;
+end
+
+
+% --- Executes on button press in checkboxPoissonNoise.
+function checkboxPoissonNoise_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxPoissonNoise (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkboxPoissonNoise
+global settingForwardProjection;
+if (get(hObject,'Value') == get(hObject,'Max'))
+    settingForwardProjection.PoissonNoise = 1;
+else
+    settingForwardProjection.PoissonNoise = 0;
+end
+
+% --- Executes on button press in checkboxGaussianNoise.
+function checkboxGaussianNoise_Callback(hObject, eventdata, handles)
+% hObject    handle to checkboxGaussianNoise (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkboxGaussianNoise
+global settingForwardProjection;
+if (get(hObject,'Value') == get(hObject,'Max'))
+    settingForwardProjection.GaussianNoise = 1;
+else
+    settingForwardProjection.GaussianNoise = 0;
+end
+
+
+function editGaussianSigma_Callback(hObject, eventdata, handles)
+% hObject    handle to editGaussianSigma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of editGaussianSigma as text
+%        str2double(get(hObject,'String')) returns contents of editGaussianSigma as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function editGaussianSigma_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to editGaussianSigma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
