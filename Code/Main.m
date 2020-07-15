@@ -143,7 +143,7 @@ end
 fileName2 = '../RUN/recentsettingForwardProjection.mat';
 if exist(fileName2)
     load(fileName2);
-    set(handles.editBrightnessAdjust2,'string',settingForwardProjection.ConvPara);
+    set(handles.editBrightnessAdjust2,'string',settingForwardProjection.BrightnessAdjust2);
     set(handles.editGaussianSigma,'string',settingForwardProjection.GaussianSigma);
     
     set(handles.checkboxGPU,'value',settingForwardProjection.GPU);
@@ -151,10 +151,10 @@ if exist(fileName2)
     set(handles.checkboxGaussianNoise,'value',settingForwardProjection.GaussianNoise);
     
 else
-    set(handles.editBrightnessAdjust2,'string',0.005);
-    set(handles.editGaussianSigma,'string',0.000005);
+    set(handles.editBrightnessAdjust2,'string','0.005');
+    set(handles.editGaussianSigma,'string','0.00005');
     
-    set(handles.checkboxGPU,'value',1);
+    set(handles.checkboxGPU,'value',0);
     set(handles.checkboxPoissonNoise,'value',0);
     set(handles.checkboxGaussianNoise,'value',0);
 end
@@ -210,6 +210,7 @@ function readState(handles)
         
     settingCrop.SizeX = get(handles.editSizeX,'string');
     settingCrop.SizeY = get(handles.editSizeY,'string');
+    set(handles.editSizeZ, 'string', settingCropStack.StackDepth);
     settingCrop.SizeZ = get(handles.editSizeZ,'string');
     settingCrop.SumThreshold = get(handles.editSumThreshold,'string');
     settingCrop.VarThreshold = get(handles.editVarThreshold,'string');
@@ -277,7 +278,7 @@ function ForwardProjectioncheckState(handles)
         disp('Brightness Adjust is a fraction between 0 and 1. Higher, brighter.');
         settingForwardProjection.check = 0;
     end
-    if str2num(settingForwardProjection.GaussianSigma < 0)
+    if (str2num(settingForwardProjection.GaussianSigma) < 0)
         disp('Gaussian Sigma should be positive.');
         settingForwardProjection.check = 0;        
     end
@@ -822,199 +823,6 @@ function checkboxCompStack_CreateFcn(hObject, eventdata, handles)
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-function CropStacks
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% To cut the ground truth volumes into required stacks(Depth,PixelSize,Rotation)
-%%% Input Raw volumes with required Z step
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-warning('off');
-
-load('../RUN/recentsettingCropStack.mat');
-%%%%%%%%%%%%%%%%%%%%%%%%% Substacks Parameters%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-substack_depth = str2num(settingCropStack.StackDepth);
-overlap = str2num(settingCropStack.Overlap);
-dx = str2num(settingCropStack.dx); 
-Nnum = str2num(settingCropStack.Nnum);
-range_adjust = str2num(settingCropStack.BrightnessAdjust);
-z_sampling = str2num(settingCropStack.AxialSampling);
-rotation_step = str2num(settingCropStack.RotationStep);
-
-rectification_enable = settingCropStack.RectifyImage;
-rotation_enable = settingCropStack.Rotate;
-complement_stack = settingCropStack.CompStack;
-flip_x = settingCropStack.FlipX;
-flip_y = settingCropStack.FlipY;
-flip_z = settingCropStack.FlipZ;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-save_path = '../Data/Substacks';
-if exist('savePath','dir') ~=7
-    mkdir(save_path);
-end
-
-crop_raw_stack(substack_depth, overlap, dx, Nnum, range_adjust, z_sampling, ...
-    rotation_step, rectification_enable, rotation_enable, save_path);
-
-disp('Rectify and Augment HR data ... done');
-
-
-function forward
-%% Multi Stacks Light Field Forward Projection
-% The Stacks slice number should correspond to the depth of PSF
-% Input: uint8 tif stacks
-warning('off');
-
-load('../RUN/recentsettingForwardProjection.mat');
-%%%%%%%%%%%%%%%%%%%%%%%%% Projection Parameters%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ConvPara = str2num(settingForwardProjection.ConvPara);
-xCenter             = 657.0;   
-yCenter             = 661.0;
-dx                  = 23.455000; 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-[psf_name,psfpath] = uigetfile('*.mat','Select PSF','MultiSelect','off','../PSFmatrix');
-
-disp([ 'Loading LF_PSF...' ]);
-[LFpsf,psf_h,psf_w,psf_d,Nnum,CAindex] = readPSF([psfpath, psf_name]);
-disp(['LF_PSF has been loaded. Size: ' num2str(psf_h) 'x' num2str(psf_w) 'x' num2str(Nnum) 'x' num2str(Nnum) 'x' num2str(psf_d) '.']);
-depth = psf_d;
-
-savePath = '../Data/LFforward';
-if exist('savePath','dir') ~=7
-    mkdir(savePath);
-end
-
-sourcePath = '../Data/Substacks';
-volSource = dir(sourcePath);
-targetNum = size(volSource,1); 
-
-for t =3:targetNum
-    target = volSource(t);
-    if target.isdir
-        folderSourceName = [sourcePath '/' target.name];
-        folderSaveName = [savePath '/' target.name];
-        if exist('folderSaveName','dir') ~= 7
-            mkdir(folderSaveName);
-        end
-        subVolSource = dir(folderSourceName);
-        for tt = 3:size(subVolSource,1)
-            tic;
-            subVolName = subVolSource(tt).name;
-            volume = readVolume([folderSourceName '/' subVolName],depth,1);
-            volume_dims = size(volume);
-            stacks = zeros(volume_dims);
-            for d = 1 : depth 
-                for i = 1 : Nnum
-                    for j = 1 : Nnum
-                        sub_region =  zeros(volume_dims(1),volume_dims(2));
-                        sub_region(i: Nnum: end,j: Nnum: end) = volume(i: Nnum: end, j: Nnum: end, d);
-                        sub_psf = squeeze(LFpsf( CAindex(d,1):CAindex(d,2), CAindex(d,1):CAindex(d,2) ,i,j,d));
-%                         sub_psf = sub_psf/sum(sub_psf(:));
-                        sub_out = conv2(sub_region,sub_psf,'same');
-                        stacks(:, :, d) = stacks(:, :, d) + sub_out;
-                    end
-                end
-            end
-            LF_raw  = (sum(stacks , 3))./ConvPara;
-            LF_raw = uint8(LF_raw);
-            imwrite(LF_raw, [folderSaveName '/' subVolName]);
-            disp( ['Projected Image : ' subVolName   ' ... ' num2str(toc) 'sec' ] ); 
-        end
-    else
-        tic;
-        volume = readVolume([sourcePath '/' target.name],depth,1);
-        volume_dims = size(volume);
-        volume = gpuArray(single(volume));
-        stacks = zeros(volume_dims,'double');
-        
-        global zeroImageEx;
-        global exsize;
-        xsize = [volume_dims(1), volume_dims(2)];
-        msize = [size(LFpsf,1), size(LFpsf,2)];
-        mmid = floor(msize/2);
-        exsize = xsize + mmid;  
-        exsize = [ min( 2^ceil(log2(exsize(1))), 128*ceil(exsize(1)/128) ), min( 2^ceil(log2(exsize(2))), 128*ceil(exsize(2)/128) ) ];    
-        zeroImageEx = gpuArray(zeros(exsize, 'single'));
-%         disp(['FFT size is ' num2str(exsize(1)) 'X' num2str(exsize(2))]); 
-               
-        for d = 1 : depth 
-            for i = 1 : Nnum
-                for j = 1 : Nnum
-                    sub_region =  gpuArray.zeros(volume_dims(1),volume_dims(2),'single');
-                    sub_region(i: Nnum: end,j: Nnum: end) = volume(i: Nnum: end, j: Nnum: end, d);
-                    sub_psf = gpuArray(single(squeeze(LFpsf( CAindex(d,1):CAindex(d,2), CAindex(d,1):CAindex(d,2) ,i,j,d))));
-%                     sub_psf = sub_psf/sum(sub_psf(:));
-%                     sub_Out = conv2(sub_region,sub_psf,'same');
-                    sub_Out = conv2FFT(sub_region, sub_psf);
-                    sub_out = gather(sub_Out);
-                    stacks(:, :, d) = stacks(:, :, d) + sub_out;
-                end
-            end
-        end
-        LF_raw  = (sum(stacks , 3))./ConvPara;
-        LF_raw = uint8(LF_raw);
-        imwrite(LF_raw, [savePath '/' target.name]);
-        disp( ['Projected Image : ' target.name   ' ... ' num2str(toc) 'sec' ] );
-    end
-end
-disp(['Forward Projection ... Done']);
-
-
-function crop
-warning('off');
-load('../RUN/recentsettingCropStack.mat');
-load('../RUN/recentsettingCrop.mat');
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%Crop Parameter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-cropped_size = [str2num(settingCrop.SizeX),str2num(settingCrop.SizeY),str2num(settingCrop.SizeZ)];
-overlap = [0.5,0.5,0.];
-pixel_threshold = str2num(settingCrop.SumThreshold);
-var_threshold   = str2num(settingCrop.VarThreshold);
-save_all = settingCrop.saveAll;
-videoMode = settingCropStack.VideoMode;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-series_path_3d = '../Data/Substacks';
-save_path_3d = '../Data/TrainingPair/WF';
-series_path_2d = '../Data/LFforward';
-save_path_2d = '../Data/TrainingPair/LF';
-
-if exist('save_path_3d','dir') ~=7
-    mkdir(save_path_3d);
-end
-if exist('savePath','dir') ~=7
-    mkdir(save_path_2d);
-end
-
-if save_all    
-    if videoMode
-        crop_time_series_3d(cropped_size, overlap, series_path_3d, save_path_3d, save_all, pixel_threshold, var_threshold);
-    else
-        crop_static_3d(cropped_size, overlap, series_path_3d, save_path_3d, save_all, pixel_threshold, var_threshold);
-    end
-else
-    delete('../Data/TrainingPair/LF/*.tif');
-    delete('../Data/TrainingPair/WF/*.tif');
-    if videoMode
-        crop_time_series_3d(cropped_size, overlap, series_path_3d, save_path_3d, save_all, pixel_threshold, var_threshold);
-        crop_time_series_lightfield(cropped_size(1), overlap, series_path_2d, save_path_2d);
-    else
-        crop_static_3d(cropped_size, overlap, series_path_3d, save_path_3d, save_all, pixel_threshold, var_threshold);
-        crop_static_lightfield(cropped_size(1), overlap, series_path_2d, save_path_2d);
-    end
-end
-
-disp('Crop ...Done');
-
-
-
 
 % --- Executes on button press in checkboxGPU.
 function checkboxGPU_Callback(hObject, eventdata, handles)
@@ -1080,3 +888,95 @@ function editGaussianSigma_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+function CropStacks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% To cut the ground truth volumes into required stacks(Depth,PixelSize,Rotation)
+%%% Input Raw volumes with required Z step
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+warning('off');
+
+load('../RUN/recentsettingCropStack.mat');
+%%%%%%%%%%%%%%%%%%%%%%%%% Substacks Parameters%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+substack_depth = str2num(settingCropStack.StackDepth);
+overlap = str2num(settingCropStack.Overlap);
+dx = str2num(settingCropStack.dx); 
+Nnum = str2num(settingCropStack.Nnum);
+range_adjust = str2num(settingCropStack.BrightnessAdjust);
+z_sampling = str2num(settingCropStack.AxialSampling);
+rotation_step = str2num(settingCropStack.RotationStep);
+
+rectification_enable = settingCropStack.RectifyImage;
+rotation_enable = settingCropStack.Rotate;
+complement_stack = settingCropStack.CompStack;
+flip_x = settingCropStack.FlipX;
+flip_y = settingCropStack.FlipY;
+flip_z = settingCropStack.FlipZ;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+save_path = '../Data/Substacks';
+
+
+crop_raw_stack(substack_depth, overlap, dx, Nnum, range_adjust, z_sampling, ...
+    rotation_step, rectification_enable, rotation_enable, complement_stack,...
+    flip_x, flip_y, flip_z, save_path);
+
+disp('Rectify and Augment HR data ... done');
+
+
+function forward
+%%% Multi Stacks Light Field Forward Projection
+%%% The Stacks slice number should correspond to the depth of PSF
+%%% Input: uint8 tif stacks
+warning('off');
+
+load('../RUN/recentsettingForwardProjection.mat');
+%%%%%%%%%%%%%%%%%%%%%%%%% Projection Parameters%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+brightness_adjust = str2double(settingForwardProjection.BrightnessAdjust2);
+gpu = settingForwardProjection.GPU;
+poisson_noise = settingForwardProjection.PoissonNoise;
+gaussian_noise = settingForwardProjection.GaussianNoise;
+gaussian_sigma = str2double(settingForwardProjection.GaussianSigma);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+source_path = '../Data/Substacks';
+save_path = '../Data/LFforward';
+
+[psf_name,psf_path] = uigetfile('*.mat','Select PSF','MultiSelect','off','../PSFmatrix');
+
+forward_projection([psf_path, psf_name], poisson_noise, gaussian_noise, gaussian_sigma,...
+    brightness_adjust, gpu, source_path, save_path);
+
+disp(['Forward Projection ... Done']);
+
+
+function crop
+warning('off');
+load('../RUN/recentsettingCropStack.mat');
+load('../RUN/recentsettingCrop.mat');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%Crop Parameter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+cropped_size = [str2num(settingCrop.SizeX),str2num(settingCrop.SizeY),str2num(settingCrop.SizeZ)];
+overlap = [0.5,0.5,0.];
+pixel_threshold = str2num(settingCrop.SumThreshold);
+var_threshold   = str2num(settingCrop.VarThreshold);
+save_all = settingCrop.saveAll;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+source_path_3d = '../Data/Substacks';
+save_path_3d = '../Data/TrainingPair/WF';
+source_path_2d = '../Data/LFforward';
+save_path_2d = '../Data/TrainingPair/LF';
+
+generate_patches(cropped_size, overlap, pixel_threshold, var_threshold, ...
+    save_all, source_path_3d, save_path_3d, source_path_2d, save_path_2d)
+
+disp('Crop ...Done');
+
+

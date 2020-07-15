@@ -20,14 +20,6 @@ wrap_content = false;
 
 overlap_px = floor(overlap .* cropped_size);
 
-% [file_name,  path] = uigetfile({ '*.tif'; '*.*'}, 'MultiSelect', 'on');
-% if ~iscell(file_name)
-%     if file_name == 0
-%         return
-%     end
-%     file_name = {file_name};
-% end
-
 file_list = dir(static_path);
 
 file_num = length(file_list);
@@ -39,7 +31,9 @@ step = cropped_size - overlap_px;
 abandoned_list = [];
 
 if save_all
-    if mod(file_num, 2) == 1
+    if file_num <= 4
+        interval = 1;
+    elseif mod(file_num, 2) == 1
         interval = floor((file_num - 2) / 2);
     else
         interval = floor((file_num - 3) / 2);

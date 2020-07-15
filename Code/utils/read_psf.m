@@ -1,4 +1,4 @@
-function [LFpsf,height,width,depth,Nnum,CAindex] = readPSF(file)
+function [LFpsf,height,width,depth,Nnum,CAindex] = read_psf(file)
     psf = load(file);
     psf5d = psf.H;
     Nnum = psf.Nnum;
