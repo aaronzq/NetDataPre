@@ -3,6 +3,8 @@ It's written in Matlab and we provide a GUI for convenience. The tool consists o
 
 ![GUI screenshot](Example/GUI.png)
 
+
+### Run the main.m to start the GUI program. 
 #### 1. Rectify and Augment HR data
 Prepare the high resolution 3D stacks (Ground Truth) for Forward Projection (light field simulation). Each stack is cropped into substacks with certain number of slice, in corresponding to the depth of light field PSF (point spread function).
 * **Parameters**
