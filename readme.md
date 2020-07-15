@@ -38,3 +38,8 @@ Generate small patches (3D substacks v.s. 2D light field images) for VCD-Net tra
 	* **SumThreshold, VarThreshold**: 2 threshold values for program to decide which of those generated blocks are lack of information and should be discarded. 
 
 * **Usage**: Input proper Patch Size and click *CropTest*. The program will then run a ‘test crop’ on some of the data and output their Sum and Var values. Then you could examine the output patches to decide threshold should to put. Input these threshold and click Crop. The program will read images from ./Data/Substacks and ./Data/LFforward and a folder .Data/TrainingPair will be created to store the outputs. 
+
+#### If GUI is not preferred. Please directly run the corresponding matlab scripts (with input variables defined in same way as above):
+* crop_raw_stack.m
+* forward_projection.m
+* generate_patches.m
