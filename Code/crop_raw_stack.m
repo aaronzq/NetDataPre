@@ -1,6 +1,6 @@
 function crop_raw_stack(substack_depth, overlap, dx, Nnum, range_adjust, z_sampling, ...
     rotation_step, rectification_enable, rotation_enable, compstack_enable,...
-    flipx, flipy, flipz, save_path)
+    flipx, flipy, flipz, file_path, file_name, save_path)
 % CROP_RAW_STACK crops the HR data in depth and augments the dataset
 %   crop_raw_stack(substack_depth, overlap, dx, Nnum, range_adjust, z_sampling, ...
 %                   rotation_step, rectification_enale, rotation_enable, compstack_enable,...
@@ -18,9 +18,11 @@ function crop_raw_stack(substack_depth, overlap, dx, Nnum, range_adjust, z_sampl
 %     compstack_enable - enable to add black slices if the origianl stack
 %     has insufficient slice number
 %     flipx, flipy, flipz - enable to flip along one dimension
+%     file_path - folder to read stacks
+%     file_name - cell, cell that stores file names of each stack
 %     save_path - where to save
 
-addpath ./utils;
+addpath('./utils');
 
 if ~exist('save_path','dir')
     mkdir(save_path);
@@ -28,10 +30,6 @@ end
 
 overlap_slice = floor(overlap * substack_depth);
 
-[file_name,file_path] = uigetfile('*.tif','Select Original Stacks','MultiSelect','on');
-if ~iscell(file_name)
-    file_name = {file_name};
-end
 file_num = size(file_name,2);
 
 for n=1:file_num
@@ -52,6 +50,7 @@ for n=1:file_num
             f = zeros([row, col, substack_depth]); b = f;
             f(:,:, 1 : depth) = sampled_stack;
             b(:,:, end-depth+1 : end) = sampled_stack;
+            stacks_to_rotate = zeros([row, col, substack_depth, 2]);
             stacks_to_rotate(:,:,:,1) = f;
             stacks_to_rotate(:,:,:,2) = b;
         else

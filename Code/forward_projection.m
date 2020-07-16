@@ -13,7 +13,7 @@ function forward_projection(psf, poisson_noise, gaussian_noise, gaussian_sigma, 
 %     source_path - where to read stacks
 %     save_path - where to save light field raw images
     
-    addpath ./utils;
+    addpath('./utils');
 
     disp([ 'Loading LF_PSF...' ]);
     [LFpsf,psf_h,psf_w,psf_d,Nnum,CAindex] = read_psf(psf);

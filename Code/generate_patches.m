@@ -14,7 +14,7 @@ function generate_patches(cropped_size, overlap, pixel_threshold, var_threshold,
 %     source_path_3d, source_path_2d - where to read stacks
 %     save_path_3d, save_path_2d - where to save light field raw images
 
-    addpath ./utils;
+    addpath('./utils');
     
     if ~exist('save_path_2d','dir')
         mkdir(save_path_2d);

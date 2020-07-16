@@ -898,10 +898,8 @@ end
 
 
 function CropStacks
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% To cut the ground truth volumes into required stacks(Depth,PixelSize,Rotation)
-%%% Input Raw volumes with required Z step
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% To crop the ground truth volumes into required substacks
+
 warning('off');
 
 load('../RUN/recentsettingCropStack.mat');
@@ -923,10 +921,14 @@ flip_z = settingCropStack.FlipZ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 save_path = '../Data/Substacks';
 
+[file_name,file_path] = uigetfile('*.tif','Select Original Stacks','MultiSelect','on');
+if ~iscell(file_name)
+    file_name = {file_name};
+end
 
 crop_raw_stack(substack_depth, overlap, dx, Nnum, range_adjust, z_sampling, ...
     rotation_step, rectification_enable, rotation_enable, complement_stack,...
-    flip_x, flip_y, flip_z, save_path);
+    flip_x, flip_y, flip_z, file_path, file_name, save_path);
 
 disp('Rectify and Augment HR data ... done');
 
@@ -934,7 +936,6 @@ disp('Rectify and Augment HR data ... done');
 function forward
 %%% Multi Stacks Light Field Forward Projection
 %%% The Stacks slice number should correspond to the depth of PSF
-%%% Input: uint8 tif stacks
 warning('off');
 
 load('../RUN/recentsettingForwardProjection.mat');
@@ -954,7 +955,7 @@ save_path = '../Data/LFforward';
 forward_projection([psf_path, psf_name], poisson_noise, gaussian_noise, gaussian_sigma,...
     brightness_adjust, gpu, source_path, save_path);
 
-disp(['Forward Projection ... Done']);
+disp(['Forward Projection ... done']);
 
 
 function crop
@@ -977,6 +978,6 @@ save_path_2d = '../Data/TrainingPair/LF';
 generate_patches(cropped_size, overlap, pixel_threshold, var_threshold, ...
     save_all, source_path_3d, save_path_3d, source_path_2d, save_path_2d)
 
-disp('Crop ...Done');
+disp('Crop ...done');
 
 
